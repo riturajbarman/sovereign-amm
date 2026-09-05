@@ -123,7 +123,7 @@ export default function GridPage() {
               Safety Mechanism
             </h3>
             <p className="text-xs text-textMuted leading-relaxed">
-              Any trade in the L2 Order Book that implies a power transfer causing a line to breach its safety margin ($\approx 90\%$ of $f_{max}$) is automatically pre-screened and rejected by the engine before clearing.
+              Any trade in the L2 Order Book that implies a power transfer causing a line to breach its safety margin (≈ 90% of f_max) is automatically pre-screened and rejected by the engine before clearing.
             </p>
           </div>
         </div>

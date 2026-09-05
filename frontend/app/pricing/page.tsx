@@ -2,42 +2,42 @@
 
 import { useEffect, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { useEngineStore } from "@/store/engineStore";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 export default function PricingPage() {
+  const { isConnected } = useWebSocket("ws://127.0.0.1:8000/ws/stream");
+  const { tick, micro_price, amm_bid, amm_ask, quote_breakdown } = useEngineStore();
+
   const [history, setHistory] = useState<any[]>([]);
   const [latestState, setLatestState] = useState<any>(null);
 
   useEffect(() => {
-    const ws = new WebSocket("ws://127.0.0.1:8000/ws/stream");
+    if (tick && micro_price && amm_bid && amm_ask && quote_breakdown) {
+      const mid = micro_price / 1_000_000;
+      const bid = amm_bid / 1_000_000;
+      const ask = amm_ask / 1_000_000;
+      
+      const newPoint = {
+        tick,
+        mid,
+        bid,
+        ask,
+        c_deg: quote_breakdown.c_deg || 0,
+        delta_bid: quote_breakdown.delta_bid || 0,
+        delta_ask: quote_breakdown.delta_ask || 0,
+      };
+      
+      setLatestState(newPoint);
+      setHistory(prev => {
+         const last = prev[prev.length - 1];
+         if (last && last.tick === tick) return prev;
+         return [...prev.slice(-49), newPoint];
+      });
+    }
+  }, [tick, micro_price, amm_bid, amm_ask, quote_breakdown]);
 
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === "state" && data.amm_quote) {
-          const mid = data.micro_price / 1_000_000;
-          const bid = data.amm_quote.bid_price / 1_000_000;
-          const ask = data.amm_quote.ask_price / 1_000_000;
-          
-          const newPoint = {
-            tick: data.tick,
-            mid,
-            bid,
-            ask,
-            c_deg: data.breakdown?.c_deg || 0,
-            delta_bid: data.breakdown?.delta_bid || 0,
-            delta_ask: data.breakdown?.delta_ask || 0,
-          };
-          
-          setLatestState(newPoint);
-          setHistory(prev => [...prev.slice(-49), newPoint]); // Keep last 50
-        }
-      } catch (e) {}
-    };
-
-    return () => ws.close();
-  }, []);
-
-  if (!latestState) return <div className="p-8 text-textMuted">Waiting for market data...</div>;
+  if (!latestState) return <div className="p-8 text-textMuted">Waiting for market data... {isConnected ? "" : "(Offline)"}</div>;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -81,7 +81,7 @@ export default function PricingPage() {
               <span>+₹{latestState.delta_ask.toFixed(4)}</span>
             </div>
             <div className="flex justify-between items-center pb-2 border-b border-border">
-              <span className="text-orange-400">+ Degradation Cost ($C_{deg}$)</span>
+              <span className="text-orange-400">+ Degradation Cost (C_deg)</span>
               <span>+₹{latestState.c_deg.toFixed(4)}</span>
             </div>
             <div className="flex justify-between items-center pb-2 border-b border-border bg-red-500/10 p-2 rounded">
