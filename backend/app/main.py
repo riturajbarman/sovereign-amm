@@ -231,8 +231,36 @@ async def sim_loop():
         print(f"Battery: {state.battery}")
 
 
+from backend.app.core.auth import get_password_hash
+from backend.app.db.store import store
+import uuid
+
+def seed_master_admin():
+    admin_email = "riturajtrades25@gmail.com"
+    if not store.get_user(admin_email):
+        print("[BOOT] Seeding master admin account...")
+        admin_user = {
+            "id": f"admin-{uuid.uuid4().hex[:8]}",
+            "email": admin_email,
+            "password_hash": get_password_hash("abcd@12...."),
+            "role": "admin",
+            "status": "approved",
+            "consumer_no": "MASTER-000",
+            "connection_type": "grid_operator",
+            "sanctioned_load_kw": 0.0,
+            "solar_kwp": 0.0,
+            "inverter_rating_kw": 0.0,
+            "assigned_bus_id": 0,
+            "bank_account_masked": "SYSTEM"
+        }
+        store.add_user(admin_user)
+        print("[BOOT] Master admin seeded successfully.")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Seed Master Admin
+    seed_master_admin()
+    
     # Initialize RAG sidecar with docs
     from rag_sidecar.explain import init_store
     docs_path = pathlib.Path(__file__).parent.parent.parent / "docs"

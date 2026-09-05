@@ -49,7 +49,7 @@ export default function BatteryPage() {
           <div className="text-3xl font-bold font-jetbrains">{latestState.soc.toFixed(2)} <span className="text-lg text-textMuted font-sans">kWh</span></div>
         </div>
         <div className="bg-surface border border-border rounded-lg p-6 shadow-sm">
-          <h3 className="text-sm text-textMuted uppercase tracking-wider mb-2">Marginal Wear Cost ($C_{deg}$)</h3>
+          <h3 className="text-sm text-textMuted uppercase tracking-wider mb-2">Marginal Wear Cost (C_deg)</h3>
           <div className="text-3xl font-bold font-jetbrains text-orange-400">₹{latestState.c_deg.toFixed(4)}</div>
         </div>
         <div className="bg-surface border border-border rounded-lg p-6 shadow-sm">

@@ -69,19 +69,19 @@ export default function Dashboard() {
               <div className="flex flex-col">
                 <span className="text-[10px] text-textMuted font-sans">MICRO PRICE (INR/kWh)</span>
                 <span className="text-3xl font-mono font-bold tabular-nums text-textMain">
-                  <TickerFlash value={micro_price || 5.0} decimals={6} />
+                  <TickerFlash value={(micro_price || 5000000) / 1000000} decimals={4} />
                 </span>
               </div>
               <div className="flex flex-col">
                 <span className="text-[10px] text-textMuted font-sans">BEST BID</span>
                 <span className="text-3xl font-mono font-bold text-success tabular-nums">
-                  <TickerFlash value={best_bid || 4.99} decimals={6} />
+                  <TickerFlash value={(best_bid || 4990000) / 1000000} decimals={4} />
                 </span>
               </div>
               <div className="flex flex-col">
                 <span className="text-[10px] text-textMuted font-sans">BEST ASK</span>
                 <span className="text-3xl font-mono font-bold text-danger tabular-nums">
-                  <TickerFlash value={best_ask || 5.01} decimals={6} />
+                  <TickerFlash value={(best_ask || 5010000) / 1000000} decimals={4} />
                 </span>
               </div>
               <div className="flex flex-col">
