@@ -197,6 +197,18 @@ async def sim_loop():
                     "line_limits": (grid_topology.f_max * grid_topology.safety_margin).tolist(),
                     "rejections": rejection_counter,
                 }
+                dto["emergency"] = {
+                    "active": state.emergency_active,
+                    "reason": state.emergency_reason,
+                    "operator": state.emergency_operator
+                }
+                
+                # Add demo narration
+                from backend.app.api.demo import current_scenario, current_narration
+                dto["demo"] = {
+                    "active_scenario": current_scenario,
+                    "narration": current_narration
+                }
                 
                 disconnected = set()
                 for client in clients:
@@ -244,6 +256,18 @@ static_dir = pathlib.Path(__file__).parent / "static"
 static_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
+
+from backend.app.api.auth import router as auth_router
+from backend.app.api.admin import router as admin_router
+from backend.app.api.emergency import router as emergency_router
+from backend.app.api.account import router as account_router
+from backend.app.api.demo import router as demo_router
+
+app.include_router(auth_router)
+app.include_router(admin_router)
+app.include_router(emergency_router)
+app.include_router(account_router)
+app.include_router(demo_router)
 
 @app.get("/health")
 def health():

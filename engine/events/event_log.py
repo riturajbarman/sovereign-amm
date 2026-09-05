@@ -1,6 +1,9 @@
 from typing import List
 
-from engine.types import Event, OrderPlaced, OrderCancelled, TradeExecuted, QuoteUpdated, SoCChanged, TradeRejected, BatteryState
+from engine.types import (
+    Event, OrderPlaced, OrderCancelled, TradeExecuted, QuoteUpdated, 
+    SoCChanged, TradeRejected, BatteryState, EmergencyOverrideEngaged, EmergencyOverrideReleased
+)
 from engine.core.order_book.limit_order_book import LimitOrderBook
 from engine.core.degradation.rainflow_stream import RainflowStream, RainflowParams
 
@@ -18,15 +21,29 @@ class EngineState:
         rf_params = RainflowParams(c_battery_capex=1_000_000.0, n0=3000.0, beta=1.5, e_nominal=100.0, eta_roundtrip=0.9)
         self.rainflow = RainflowStream(rf_params, q_max=100_000_000)
         self.rainflow.append(50_000_000) # Initial point
+        
+        # Emergency Override State
+        self.emergency_active = False
+        self.emergency_reason = ""
+        self.emergency_operator = ""
 
     def apply(self, event: Event):
         """Dispatch event to the appropriate component."""
         if isinstance(event, (OrderPlaced, OrderCancelled, TradeExecuted)):
-            self.lob.apply(event)
+            if not self.emergency_active or isinstance(event, OrderCancelled):
+                self.lob.apply(event)
         elif isinstance(event, SoCChanged):
-            self.battery = BatteryState(soc=event.new_soc, capacity=self.battery.capacity, timestamp=0)
-            self.rainflow.append(event.new_soc)
-        # Handle other events later (QuoteUpdated, TradeRejected)
+            if not self.emergency_active:
+                self.battery = BatteryState(soc=event.new_soc, capacity=self.battery.capacity, timestamp=0)
+                self.rainflow.append(event.new_soc)
+        elif isinstance(event, EmergencyOverrideEngaged):
+            self.emergency_active = True
+            self.emergency_reason = event.reason
+            self.emergency_operator = event.operator_id
+        elif isinstance(event, EmergencyOverrideReleased):
+            self.emergency_active = False
+            self.emergency_reason = ""
+            self.emergency_operator = ""
 
 
 def replay(events: List[Event]) -> EngineState:
