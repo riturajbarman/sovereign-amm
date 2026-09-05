@@ -86,5 +86,17 @@ class TradeRejected:
     maker_order_id: str
     taker_order_id: str
     reason: str
+@dataclass(frozen=True, slots=True)
+class EmergencyOverrideEngaged:
+    sequence_number: int
+    operator_id: str
+    reason: str
+    timestamp: int
+
+@dataclass(frozen=True, slots=True)
+class EmergencyOverrideReleased:
+    sequence_number: int
+    operator_id: str
+    timestamp: int
     
-Event = Union[OrderPlaced, OrderCancelled, TradeExecuted, QuoteUpdated, SoCChanged, TradeRejected]
+Event = Union[OrderPlaced, OrderCancelled, TradeExecuted, QuoteUpdated, SoCChanged, TradeRejected, EmergencyOverrideEngaged, EmergencyOverrideReleased]
