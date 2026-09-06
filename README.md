@@ -12,7 +12,7 @@
   <p align="center">
     <a href="#architecture"><strong>[ Architecture ]</strong></a> &nbsp;&nbsp;|&nbsp;&nbsp;
     <a href="#core-mathematics"><strong>[ Core Math ]</strong></a> &nbsp;&nbsp;|&nbsp;&nbsp;
-    <a href="#feature-grid"><strong>[ Features ]</strong></a> &nbsp;&nbsp;|&nbsp;&nbsp;
+    <a href="#platform-capabilities"><strong>[ Capabilities ]</strong></a> &nbsp;&nbsp;|&nbsp;&nbsp;
     <a href="#quickstart"><strong>[ Quickstart ]</strong></a>
   </p>
 </div>
@@ -31,19 +31,24 @@ In this exchange, households and solar producers post bids and asks for energy (
 
 <h2 id="architecture">Architecture</h2>
 
-The system leverages an event-sourced ledger and strict constraint screening to maintain perfect state determinism and O(1) matching efficiency.
+The system leverages an event-sourced ledger and strict constraint screening to maintain perfect state determinism and O(1) matching efficiency. The platform is wrapped in a secure, role-based Next.js frontend for operators and judges.
 
 ```mermaid
 graph TD
     classDef core fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#f8fafc;
     classDef ext fill:#0f172a,stroke:#64748b,stroke-width:2px,color:#cbd5e1;
+    classDef ui fill:#334155,stroke:#94a3b8,stroke-width:2px,color:#f8fafc;
 
     LS["Load Simulator<br/>(Raised Sine + AR(1) Noise)"]:::ext -->|Injects Orders| L2["L2 Order Book<br/>(Integer Micro-Units)"]:::core
     L2 <-->|GLFT Quotes + Rainflow Wear| BAT(("Market Maker Battery")):::core
     L2 -->|Proposed Trades| PTDF["PTDF Screening<br/>(Linearized Limits)"]:::core
     PTDF -->|Accepted Matches| EL["Event Ledger<br/>(Deterministic State Projection)"]:::core
+    
+    EL -->|10Hz Tick Stream| WS["WebSocket API Hub"]:::ext
     EL --> RAG["ChromaDB + LLM Sidecar<br/>(RAG Explainability)"]:::ext
-    EL --> UI["Next.js Frontend<br/>(Control Room Dashboard)"]:::ext
+    
+    WS --> UI["Next.js Control Room Dashboard<br/>(RBAC: Admin, Operator, Judge)"]:::ui
+    RAG -->|Contextual Answers| UI
 ```
 
 ---
@@ -59,71 +64,53 @@ Sovereign-AMM strictly adheres to mathematical rigor. Core components include:
 
 ---
 
-<h2 id="feature-grid">Feature Grid</h2>
+<h2 id="platform-capabilities">Platform Capabilities & Modules</h2>
+
+The system exposes a comprehensive suite of real-time operator interfaces and observability tools.
 
 <table width="100%">
   <thead>
     <tr>
-      <th align="left">Feature</th>
-      <th align="center">Status</th>
-      <th align="left">Implementation Notes</th>
+      <th align="left">Module</th>
+      <th align="left">Description & Implementation Details</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td><strong>L2 Order Book</strong></td>
-      <td align="center">🟢 LIVE</td>
-      <td>Integer micro-units, O(1) best bid/ask matching engine.</td>
+      <td><strong>Live Grid Topology</strong></td>
+      <td>Real-time microgrid map visualizing power flow direction, per-line loading, and thermal limits. PTDF-based congestion is computed instantly, highlighting congested lines and blocking unsafe trades.</td>
     </tr>
     <tr>
-      <td><strong>GLFT Pricing</strong></td>
-      <td align="center">🟢 LIVE</td>
-      <td>Bounded inventory [0, Q_max] asymptotic quoting.</td>
+      <td><strong>GLFT Pricing Waterfall</strong></td>
+      <td>Live decomposition of the pricing algorithm: micro-price &rarr; inventory adjustment &rarr; risk adjustment &rarr; degradation cost &rarr; final bid/ask spread.</td>
     </tr>
     <tr>
-      <td><strong>Rainflow Wear</strong></td>
-      <td align="center">🟢 LIVE</td>
-      <td>Streaming 3-point cycle counting folded into the Ask.</td>
+      <td><strong>Battery Degradation Monitor</strong></td>
+      <td>Live State-of-Charge (SoC) graph bounded by physical walls. Streams Rainflow cycle counts to compute accumulated wear and marginal degradation cost (C_deg) in real time.</td>
     </tr>
     <tr>
-      <td><strong>PTDF Screening</strong></td>
-      <td align="center">🟢 LIVE</td>
-      <td>Linearized line limits, evaluated in sub-ms latency.</td>
+      <td><strong>Simulated Settlement Ledger</strong></td>
+      <td>Tracks user energy consumption and solar generation. Replaces fiat banking with simulated monthly net settlements formatted to NPCI bulk-NEFT standards.</td>
     </tr>
     <tr>
-      <td><strong>Event Ledger</strong></td>
-      <td align="center">🟢 LIVE</td>
-      <td>100% deterministic state projection (event-sourced).</td>
+      <td><strong>RAG Explainability Copilot</strong></td>
+      <td>Global slide-out drawer allows judges to ask "Why did the price spike?" or "Why was this trade rejected?" Answers strictly cite event-log entries via ChromaDB vector search.</td>
     </tr>
     <tr>
-      <td><strong>Load Simulator</strong></td>
-      <td align="center">🟢 LIVE</td>
-      <td>Raised sine wave with AR(1) autoregressive noise.</td>
+      <td><strong>Interactive Demo Mode</strong></td>
+      <td>Pre-seeded deterministic scenarios (Load Spike, Solar Surplus, Low Battery, Grid Congestion) demonstrating system response without requiring raw parameter manipulation.</td>
     </tr>
     <tr>
-      <td><strong>UI Dashboard</strong></td>
-      <td align="center">🟢 LIVE</td>
-      <td>Next.js App Router providing real-time 10Hz updates.</td>
+      <td><strong>Role-Based Access Control</strong></td>
+      <td>Secure JWT authentication with Argon2id hashing. Strict segregation of duties across Admin, Grid Operator, Battery Operator, Market Participant, and Viewer/Judge roles.</td>
     </tr>
     <tr>
-      <td><strong>RAG Sidecar</strong></td>
-      <td align="center">🟢 LIVE</td>
-      <td>ChromaDB + LLM explainability for order execution.</td>
+      <td><strong>Emergency Safety Override</strong></td>
+      <td>Operator-only kill switch. Pauses automated trading and battery dispatch while maintaining event log continuity. Triggers site-wide visual alerts.</td>
     </tr>
     <tr>
-      <td><strong>Zero-Knowledge</strong></td>
-      <td align="center">🟡 STUBBED</td>
-      <td>Pedersen commitments / Bulletproofs (ADR 002).</td>
-    </tr>
-    <tr>
-      <td><strong>Full DC-OPF</strong></td>
-      <td align="center">🟡 STUBBED</td>
-      <td>LP solver formulation (ADR 003).</td>
-    </tr>
-    <tr>
-      <td><strong>VPIN/GARCH</strong></td>
-      <td align="center">🟡 STUBBED</td>
-      <td>Advanced risk metrics & volatility forecasting.</td>
+      <td><strong>System Health & Telemetry</strong></td>
+      <td>Live status and latency metrics for the L2 Order Book, GLFT Engine, PTDF Engine, and WS Hub. Includes a live-tailing view of the raw event stream for auditability.</td>
     </tr>
   </tbody>
 </table>
