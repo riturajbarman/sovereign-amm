@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { validateTickMessage } from '@/lib/validators';
 import { useMarketStore } from '@/store/marketStore';
+import { useEngineStore } from '@/store/engineStore';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -51,19 +52,9 @@ export function calcBackoffDelay(attempts: number): number {
 
 /**
  * Manages a WebSocket connection to `url`, authenticating via the `token`
- * query parameter. Returns the live `WebSocket` instance (or `null` when
- * not yet connected / token is absent).
- *
- * @param url   - Full WebSocket URL, e.g. `ws://localhost:8000/ws`
- * @param token - JWT authentication token. Pass `null` to skip connecting
- *                until auth is ready (Requirement 24.5).
- *
- * @example
- * ```tsx
- * const ws = useWebSocket(process.env.NEXT_PUBLIC_WS_URL!, token);
- * ```
+ * query parameter when provided.
  */
-export function useWebSocket(url: string, token: string | null): UseWebSocketReturn {
+export function useWebSocket(url: string, token: string | null = "public"): UseWebSocketReturn {
   // Stable references that don't trigger re-renders
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -85,8 +76,8 @@ export function useWebSocket(url: string, token: string | null): UseWebSocketRet
    * reconnection timeout fires.
    */
   const connect = useCallback(() => {
-    // Guard: don't connect without a token (Requirement 24.5)
-    if (!token) {
+    // Guard: don't connect if token is explicitly null
+    if (token === null) {
       console.log('[WS] No auth token — skipping connection');
       return;
     }
@@ -100,7 +91,7 @@ export function useWebSocket(url: string, token: string | null): UseWebSocketRet
       return;
     }
 
-    const wsUrl = `${url}?token=${encodeURIComponent(token)}`;
+    const wsUrl = token && token !== "public" ? `${url}?token=${encodeURIComponent(token)}` : url;
     console.log('[WS] Connecting…', wsUrl);
 
     const ws = new WebSocket(wsUrl);
@@ -117,9 +108,31 @@ export function useWebSocket(url: string, token: string | null): UseWebSocketRet
     // ── onmessage ───────────────────────────────────────────────────────────
     ws.onmessage = (event: MessageEvent) => {
       try {
-        const raw: unknown = JSON.parse(event.data as string);
+        const raw: any = JSON.parse(event.data as string);
         validateTickMessage(raw); // throws on invalid shape (Requirement 4.8)
         updateFromTick(raw);      // narrowed to TickMessage by the assertion
+
+        // Update engineStore for legacy components
+        const microP = typeof raw.micro_price === 'number' ? raw.micro_price : 0;
+        const bBid = typeof raw.best_bid === 'number' ? raw.best_bid : 0;
+        const bAsk = typeof raw.best_ask === 'number' ? raw.best_ask : 0;
+        const bSoc = typeof raw.battery_soc === 'number' ? raw.battery_soc : 0;
+        const aBid = typeof raw.amm_bid === 'number' ? raw.amm_bid : null;
+        const aAsk = typeof raw.amm_ask === 'number' ? raw.amm_ask : null;
+
+        useEngineStore.getState().setEngineState({
+          tick: raw.tick,
+          micro_price: microP * 1_000_000,
+          best_bid: bBid * 1_000_000,
+          best_ask: bAsk * 1_000_000,
+          soc: bSoc * 1_000_000,
+          q: raw.battery_inventory !== undefined ? (raw.battery_inventory - 50_000) / 50_000 : (bSoc - 50) / 50,
+          bids: (raw.bids || []).map((b: number[]) => [b[0] * 1_000_000, b[1] * 1_000_000]),
+          asks: (raw.asks || []).map((a: number[]) => [a[0] * 1_000_000, a[1] * 1_000_000]),
+          amm_bid: aBid !== null ? aBid * 1_000_000 : null,
+          amm_ask: aAsk !== null ? aAsk * 1_000_000 : null,
+          quote_breakdown: (raw.quote_breakdown as any) || null,
+        });
       } catch (err) {
         // Log validation/parse errors but keep the connection alive
         console.error('[WS] Message validation error:', err);
