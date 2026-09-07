@@ -1,46 +1,60 @@
-/**
- * Public Landing Page
- *
- * Composes the public-facing marketing page: hero section, feature carousel,
- * and sidebar laid out in a responsive flex row.
- *
- * This page renders without authentication (Requirement 1.2). The layout
- * mirrors the trading dashboard's carousel + sidebar proportions so that
- * first-time visitors get an accurate preview of the product.
- *
- * Requirements: 1.1, 1.2, 1.4
- */
-
+'use client';
 import dynamic from 'next/dynamic';
-import { HeroSection } from '@/components/hero/HeroSection';
+import { Hero } from '@/components/landing/Hero';
+import { TickerTape } from '@/components/landing/TickerTape';
+import { RecentArticles } from '@/components/landing/RecentArticles';
 
-// Dynamic imports with ssr:false prevent the recharts / zustand store from
-// being evaluated during Next.js static prerender, which causes a
-// "clientModules" error in production builds.
-const FeatureCarousel = dynamic(
-  () => import('@/components/carousel/FeatureCarousel').then((m) => m.FeatureCarousel),
+// Heavy components loaded client-side only to avoid SSR/hydration issues
+const TerminalCarousel = dynamic(
+  () => import('@/components/landing/TerminalCarousel').then((m) => m.TerminalCarousel),
+  { ssr: false },
+);
+const RagCopilot = dynamic(
+  () => import('@/components/landing/RagCopilot').then((m) => m.RagCopilot),
+  { ssr: false },
+);
+const SystemCardsGrid = dynamic(
+  () => import('@/components/landing/SystemCardsGrid').then((m) => m.SystemCardsGrid),
   { ssr: false },
 );
 
-const Sidebar = dynamic(
-  () => import('@/components/sidebar/Sidebar').then((m) => m.Sidebar),
-  { ssr: false },
-);
-
-export default function LandingPage() {
+export default function HomePage() {
   return (
-    <main>
-      {/* ── Hero section: headline, subheading, CTA buttons ───────────────── */}
-      <HeroSection />
+    <>
+      {/* 1. Hero */}
+      <Hero />
 
-      {/* ── Carousel + Sidebar preview row ───────────────────────────────── */}
-      <section
-        aria-label="Product feature preview"
-        className="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto px-4 py-12"
-      >
-        <FeatureCarousel />
-        <Sidebar />
+      {/* 2. Ticker Tape */}
+      <TickerTape />
+
+      {/* 3. Carousel + Sidebar */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid lg:grid-cols-[1fr_400px] gap-6">
+          {/* Left: carousel */}
+          <TerminalCarousel />
+
+          {/* Right: sidebar stack */}
+          <aside className="flex flex-col gap-6">
+            <div className="rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur-sm p-5">
+              <RecentArticles />
+            </div>
+            <div className="rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur-sm p-5">
+              <RagCopilot />
+            </div>
+          </aside>
+        </div>
       </section>
-    </main>
+
+      {/* 4. System Cards Grid */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+        <div className="mb-4">
+          <p className="text-xs uppercase tracking-widest text-slate-500 font-mono mb-1">
+            Live System Status
+          </p>
+          <h2 className="text-xl font-bold text-white">Engine Telemetry</h2>
+        </div>
+        <SystemCardsGrid />
+      </section>
+    </>
   );
 }

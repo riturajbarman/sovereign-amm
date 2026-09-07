@@ -81,6 +81,9 @@ const config: Config = {
         "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "fade-in": "fadeIn 0.2s ease-out",
         "slide-down": "slideDown 0.2s ease-out",
+        "marquee": "marquee 30s linear infinite",
+        "marquee-fast": "marquee 15s linear infinite",
+        "slide-in-right": "slideInRight 250ms ease-out",
       },
       keyframes: {
         flashGreen: {
@@ -98,6 +101,14 @@ const config: Config = {
         slideDown: {
           "0%": { opacity: "0", transform: "translateY(-4px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        marquee: {
+          "0%": { transform: "translateX(0%)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
+        slideInRight: {
+          from: { transform: "translateX(100%)" },
+          to: { transform: "translateX(0%)" },
         },
       },
       spacing: {

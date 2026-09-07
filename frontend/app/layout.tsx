@@ -3,6 +3,8 @@ import { Inter, Outfit, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/navigation/Navbar";
 import { Footer } from "@/components/footer/Footer";
+import { MarketClockProvider } from "@/components/providers/MarketClockProvider";
+import { AuthDrawer } from "@/components/layout/AuthDrawer";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
@@ -33,13 +35,16 @@ export default function RootLayout({
           Skip to main content
         </a>
 
-        <Navbar />
+        <MarketClockProvider>
+          <Navbar />
 
-        <main id="main-content" className="flex-1">
-          {children}
-        </main>
+          <main id="main-content" className="flex-1">
+            {children}
+          </main>
 
-        <Footer />
+          <Footer />
+          <AuthDrawer />
+        </MarketClockProvider>
       </body>
     </html>
   );

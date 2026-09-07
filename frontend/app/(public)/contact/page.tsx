@@ -178,10 +178,10 @@ export default function ContactPage() {
                   <div>
                     <p className="text-sm font-semibold text-slate-300">Phone</p>
                     <a
-                      href="tel:+15551234567"
+                      href="tel:+913324146666"
                       className="text-sm text-slate-400 hover:text-white transition-colors font-mono"
                     >
-                      +1 (555) 123-4567
+                      +91 33 2414 6666
                     </a>
                   </div>
                 </div>
