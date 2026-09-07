@@ -62,13 +62,16 @@ def login(req: LoginRequest, response: Response):
         
     access_token = create_access_token(data={"sub": user["email"]})
     
-    # Set httpOnly cookie
+    import os
+    is_prod = os.getenv("ENVIRONMENT", "development").lower() == "production"
+    
+    # Set httpOnly cookie with strict security controls
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
-        samesite="lax",
-        secure=False, # Set to False for local dev without HTTPS
+        samesite="strict" if is_prod else "lax",
+        secure=is_prod,
         max_age=60 * 24 * 7 * 60 # 1 week in seconds
     )
     
