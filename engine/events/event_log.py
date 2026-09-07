@@ -2,7 +2,8 @@ from typing import List
 
 from engine.types import (
     Event, OrderPlaced, OrderCancelled, TradeExecuted, QuoteUpdated, 
-    SoCChanged, TradeRejected, BatteryState, EmergencyOverrideEngaged, EmergencyOverrideReleased
+    SoCChanged, TradeRejected, BatteryState, EmergencyOverrideEngaged, EmergencyOverrideReleased,
+    ManualInjectionEvent, GridResetEvent
 )
 from engine.core.order_book.limit_order_book import LimitOrderBook
 from engine.core.degradation.rainflow_stream import RainflowStream, RainflowParams
@@ -26,6 +27,9 @@ class EngineState:
         self.emergency_active = False
         self.emergency_reason = ""
         self.emergency_operator = ""
+        
+        # Manual injections tracking: bus_id -> mw
+        self.manual_injections: dict[str, float] = {}
 
     def apply(self, event: Event):
         """Dispatch event to the appropriate component."""
@@ -41,6 +45,13 @@ class EngineState:
             self.emergency_reason = event.reason
             self.emergency_operator = event.operator_id
         elif isinstance(event, EmergencyOverrideReleased):
+            self.emergency_active = False
+            self.emergency_reason = ""
+            self.emergency_operator = ""
+        elif isinstance(event, ManualInjectionEvent):
+            self.manual_injections[event.bus_id] = event.mw
+        elif isinstance(event, GridResetEvent):
+            self.manual_injections.clear()
             self.emergency_active = False
             self.emergency_reason = ""
             self.emergency_operator = ""
