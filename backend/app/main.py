@@ -290,12 +290,18 @@ from backend.app.api.admin import router as admin_router
 from backend.app.api.emergency import router as emergency_router
 from backend.app.api.account import router as account_router
 from backend.app.api.demo import router as demo_router
+from backend.app.api.orderbook import router as orderbook_router
+from backend.app.api.history import router as history_router
+from backend.app.api.grid_control import router as grid_control_router
 
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(emergency_router)
 app.include_router(account_router)
 app.include_router(demo_router)
+app.include_router(orderbook_router)
+app.include_router(history_router)
+app.include_router(grid_control_router)
 
 @app.get("/health")
 def health():
