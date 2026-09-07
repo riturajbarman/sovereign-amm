@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, LogOut, User as UserIcon } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 
-import { useAuthStore } from '@/store/authStore';
+import { useStore } from '@/lib/store';
 import { AuthButtons } from './AuthButtons';
 import { MobileMenu } from './MobileMenu';
 
@@ -24,14 +24,16 @@ const navigationTabs = [
  *
  * - Logo "SOVEREIGN-AMM" links to "/"
  * - Desktop tabs with active-state highlighting via usePathname()
- * - Auth buttons (Sign In / Sign Up Now) when logged out; user menu when logged in
+ * - Auth buttons (Sign In / Sign Up Now) when not in demo mode; DEMO MODE
+ *   label when demoUser === true (opens the AuthDrawer, no route navigation)
  * - Mobile hamburger below 768 px that toggles MobileMenu
  *
- * Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.8, 2.9
+ * Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.8, 2.9, 10.12
  */
 export function Navbar() {
   const pathname = usePathname();
-  const { isAuthenticated, user, logout } = useAuthStore();
+  const demoUser = useStore((s) => s.demoUser);
+  const openAuth = useStore((s) => s.openAuth);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
@@ -80,8 +82,8 @@ export function Navbar() {
         {/* ── Right: Auth area + hamburger ────────────────────────────────── */}
         <div className="flex items-center gap-3">
           {/* Auth / user section — always shown */}
-          {isAuthenticated ? (
-            <UserMenu email={user?.email ?? ''} onLogout={logout} />
+          {demoUser ? (
+            <span className="text-sm text-emerald-400 font-mono">DEMO MODE</span>
           ) : (
             <AuthButtons />
           )}
@@ -114,57 +116,6 @@ export function Navbar() {
         </div>
       )}
     </header>
-  );
-}
-
-// ── Internal sub-component ───────────────────────────────────────────────────
-
-interface UserMenuProps {
-  email: string;
-  onLogout: () => void;
-}
-
-/**
- * UserMenu — compact inline dropdown shown when the user is authenticated.
- * Displays the user's email and a logout button.
- */
-function UserMenu({ email, onLogout }: UserMenuProps) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen((prev) => !prev)}
-        className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
-        aria-label="User menu"
-        aria-expanded={open}
-        aria-haspopup="true"
-      >
-        <UserIcon className="h-4 w-4" aria-hidden="true" />
-        <span className="hidden sm:inline max-w-[160px] truncate">{email}</span>
-      </button>
-
-      {open && (
-        <div
-          className="absolute right-0 mt-1 w-48 bg-slate-800 border border-slate-700 rounded-md shadow-panel py-1 animate-fade-in"
-          role="menu"
-        >
-          <div className="px-4 py-2 text-xs text-slate-400 truncate">{email}</div>
-          <hr className="border-slate-700 my-1" />
-          <button
-            onClick={() => {
-              setOpen(false);
-              onLogout();
-            }}
-            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
-            role="menuitem"
-          >
-            <LogOut className="h-4 w-4" aria-hidden="true" />
-            Sign Out
-          </button>
-        </div>
-      )}
-    </div>
   );
 }
 
