@@ -15,3 +15,6 @@ venv/
 */venv/
 chroma_db/
 sovereign_amm.egg-info/
+.DS_Store
+*/.DS_Store
+.kiro/
