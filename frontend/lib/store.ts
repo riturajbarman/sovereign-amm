@@ -253,6 +253,10 @@ export interface StoreState {
    */
   demoUser: boolean;
 
+  /** The authenticated user's JWT token */
+  jwtToken: string | null;
+
+
   /**
    * Open the auth drawer in the specified mode.
    *
@@ -262,6 +266,9 @@ export interface StoreState {
 
   /** Close the auth drawer without changing `authMode`. */
   closeAuth(): void;
+
+  /** Set the JWT token after successful login */
+  setJwtToken(token: string): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -381,8 +388,10 @@ export const useStore = create<StoreState>()(
     authDrawerOpen: false,
     authMode: 'signin' as AuthMode,
     demoUser: false,
+    jwtToken: null,
 
     openAuth: (mode: AuthMode) => set({ authDrawerOpen: true, authMode: mode }),
     closeAuth: () => set({ authDrawerOpen: false }),
+    setJwtToken: (token: string) => set({ jwtToken: token }),
   })),
 );
