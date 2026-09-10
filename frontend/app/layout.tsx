@@ -5,6 +5,7 @@ import Navbar from "@/components/navigation/Navbar";
 import { Footer } from "@/components/footer/Footer";
 import { MarketClockProvider } from "@/components/providers/MarketClockProvider";
 import { AuthDrawer } from "@/components/layout/AuthDrawer";
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
@@ -35,16 +36,18 @@ export default function RootLayout({
           Skip to main content
         </a>
 
-        <MarketClockProvider>
-          <Navbar />
+        <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
+          <MarketClockProvider>
+            <Navbar />
 
-          <main id="main-content" className="flex-1">
-            {children}
-          </main>
+            <main id="main-content" className="flex-1">
+              {children}
+            </main>
 
-          <Footer />
-          <AuthDrawer />
-        </MarketClockProvider>
+            <Footer />
+            <AuthDrawer />
+          </MarketClockProvider>
+        </GoogleOAuthProvider>
       </body>
     </html>
   );
