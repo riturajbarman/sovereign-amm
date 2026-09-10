@@ -1,7 +1,7 @@
 import asyncio
 import time
 from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
@@ -96,15 +96,9 @@ app.include_router(orderbook_router)
 app.include_router(history_router)
 app.include_router(grid_control_router)
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 def root():
-    return {
-        "name": "Sovereign-AMM Backend API",
-        "status": "online",
-        "version": "1.0.0",
-        "health": "/health",
-        "docs": "/docs"
-    }
+    return RedirectResponse(url="/docs")
 
 @app.get("/health")
 def health():
