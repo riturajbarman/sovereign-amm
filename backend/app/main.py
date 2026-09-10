@@ -96,6 +96,16 @@ app.include_router(orderbook_router)
 app.include_router(history_router)
 app.include_router(grid_control_router)
 
+@app.get("/")
+def root():
+    return {
+        "name": "Sovereign-AMM Backend API",
+        "status": "online",
+        "version": "1.0.0",
+        "health": "/health",
+        "docs": "/docs"
+    }
+
 @app.get("/health")
 def health():
     return {"status": "ok", "tick": tick_counter}
