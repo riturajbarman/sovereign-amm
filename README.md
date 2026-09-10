@@ -117,6 +117,14 @@ The system exposes a comprehensive suite of real-time operator interfaces and ob
 
 ---
 
+<h2 id="recent-updates">Recent Updates</h2>
+
+- **Persistent Backend Storage**: Migrated ledger and tick data to robust local SQLite storage (`storage.py`) for enhanced data durability across sessions.
+- **Enhanced Security Core**: Centralized JWT authentication and Argon2id hashing within the dedicated `security.py` module to enforce strict Role-Based Access Control (Admin, Operator, Judge).
+- **Expanded City Simulation**: Introduced robust mock data generators (`city_data.py`, `seed_history.py`) to seed complex virtual city topologies and history for realistic local testing.
+
+---
+
 <h2 id="quickstart">Quickstart</h2>
 
 Get the engine running in local development mode:

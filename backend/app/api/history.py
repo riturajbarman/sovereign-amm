@@ -1,39 +1,32 @@
-from typing import Literal, List
-from fastapi import APIRouter, Depends
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, Query
+from typing import List, Dict, Any
+from backend.app.api.deps import grid_scope
+from backend.app.db.storage import storage
 
-from backend.app.api.deps import auth_scope, grid_scope
+router = APIRouter(prefix="/history", tags=["history"])
+
+@router.get("/{grid_id}")
+def get_history(
+    grid_id: str = Depends(grid_scope),
+    window: str = Query("24H", description="Time window (e.g., 1H, 4H, 24H, ALL)")
+) -> List[Dict[str, Any]]:
+    """
+    Retrieve historical ticks using DuckDB columnar rollups (1-minute bins for 24H and ALL).
+    """
+    return storage.query_history(grid_id, window)
+
+from fastapi.responses import StreamingResponse
 from backend.app.engine_facade import engine_facade
 
-router = APIRouter(tags=["history"])
-
-class HistoryPoint(BaseModel):
-    t: int
-    micro_price: float
-    soc_pct: float
-    sigma: float
-    c_deg: float
-
-@router.get("/api/history/{grid_id}", response_model=List[HistoryPoint])
-async def get_history(
-    grid_id: str,
-    window: Literal["1H", "4H", "24H", "ALL"] = "1H",
-    user=Depends(auth_scope),
+@router.get("/export/{grid_id}")
+async def export_history(
+    grid_id: str = Depends(grid_scope)
 ):
-    grid_scope(grid_id, user)
-    return await engine_facade.history(grid_id, window)
-
-@router.get("/api/export/{grid_id}")
-async def export_ticks(
-    grid_id: str,
-    start: int | None = None,
-    end: int | None = None,
-    user=Depends(auth_scope),
-):
-    grid_scope(grid_id, user)
+    """
+    Stream raw tick rows as CSV without memory bloat.
+    """
     return StreamingResponse(
-        engine_facade.ticks_csv_rows(grid_id, start, end),
+        engine_facade.ticks_csv_rows(grid_id),
         media_type="text/csv",
-        headers={"Content-Disposition": f'attachment; filename="{grid_id}_ticks.csv"'},
+        headers={"Content-Disposition": f"attachment; filename=history_{grid_id}.csv"}
     )

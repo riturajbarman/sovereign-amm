@@ -13,5 +13,8 @@ RUN pip install redis passlib[argon2]
 # Copy application source
 COPY . .
 
-# Run Uvicorn
-CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Ensure start script is executable
+RUN chmod +x start.sh
+
+# Run via start script
+CMD ["./start.sh"]

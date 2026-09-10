@@ -9,7 +9,7 @@ from engine.core.market_making.glft_pricing import quote, GLFTParams
 from engine.core.power_flow.ptdf_screening import (
     GridTopology, PowerFlowState, screen_trade, create_7bus_topology
 )
-from backend.app.db.ticks_db import insert_tick, query_history, stream_ticks_csv
+from backend.app.db.storage import storage
 
 class EngineFacade:
     """
@@ -29,12 +29,13 @@ class EngineFacade:
             def ptdf_screener(maker_order: Order, taker_order: Order, fill_volume: int) -> bool:
                 # Map trader IDs to bus indices
                 trader_map = {
+                    "utility_grid": 0, # BUS-01
+                    "residential_a": 1, # BUS-02
+                    "commercial_hub": 2, # BUS-03
+                    "solar_farm": 3, # BUS-04
                     "AMM": 4, # BUS-05 Central Battery
-                    "solar_farm_1": 1, # BUS-02
-                    "solar_farm_2": 2, # BUS-03
-                    "household_aggregator": 3, # BUS-04
-                    "household_aggregator_b": 5, # BUS-06
-                    "commercial_aggregator": 6, # BUS-07
+                    "ev_plaza": 5, # BUS-06
+                    "industrial_feeder": 6, # BUS-07
                 }
                 seller_id = maker_order.trader_id if maker_order.side == Side.ASK else taker_order.trader_id
                 buyer_id = taker_order.trader_id if maker_order.side == Side.ASK else maker_order.trader_id
@@ -74,17 +75,54 @@ class EngineFacade:
         log.append(seq_event)
         state.apply(seq_event)
         
+        # Handle SoC tracking dynamically from trades
+        if isinstance(event, TradeExecuted):
+            fill = event.fill
+            # Update PTDF power flow state
+            maker_order = state.lob.orders.get(fill.maker_order_id)
+            # taker_order is trickier here since it's not in the orderbook directly if fully filled
+            # For power flow we can omit if not fully needed or track the trader map
+            # Assuming simplified logic for AMM integration:
+            is_amm_maker = fill.maker_order_id.startswith("AMM_")
+            is_amm_taker = fill.taker_order_id.startswith("AMM_")
+            if is_amm_maker or is_amm_taker:
+                amm_id = fill.maker_order_id if is_amm_maker else fill.taker_order_id
+                if "BID" in amm_id:
+                    new_soc = state.battery.soc + fill.volume
+                else:
+                    new_soc = state.battery.soc - fill.volume
+                
+                soc_event = SoCChanged(log.next_seq(), new_soc)
+                log.append(soc_event)
+                state.apply(soc_event)
+                await storage.insert_event(grid_id, type(soc_event).__name__, {"soc": new_soc}, int(time.time() * 1000))
+        
         # Apply manual injections to power flow state
         for bus_id, mw in state.manual_injections.items():
             bus_idx = int(bus_id.replace("BUS-", "").replace("0", "")) - 1 if "BUS-" in bus_id else 0
             if 0 <= bus_idx < pf_state.topology.n_buses:
                 pf_state.p_inj[bus_idx] = mw
+                
+        # Persist event via storage
+        await storage.insert_event(grid_id, type(event).__name__, {}, int(time.time() * 1000))
+
+    async def apply_manual_injection(self, grid_id: str, bus_id: str, injection_mw: float) -> bool:
+        state, log, pf_state, _ = self._get_or_create_grid(grid_id)
+        # Store in state
+        state.manual_injections[bus_id] = injection_mw
+        
+        bus_idx = int(bus_id.replace("BUS-", "").replace("0", "")) - 1 if "BUS-" in bus_id else 0
+        if 0 <= bus_idx < pf_state.topology.n_buses:
+            pf_state.p_inj[bus_idx] = injection_mw
+            return True
+        return False
 
     async def history(self, grid_id: str, window: str) -> List[Dict[str, Any]]:
-        return query_history(grid_id, window)
+        return storage.query_history(grid_id, window)
 
-    def ticks_csv_rows(self, grid_id: str, start: int | None = None, end: int | None = None) -> Generator[str, None, None]:
-        return stream_ticks_csv(grid_id, start, end)
+    async def ticks_csv_rows(self, grid_id: str, start: int | None = None, end: int | None = None) -> AsyncGenerator[str, None]:
+        async for row in storage.stream_ticks_csv(grid_id, start, end):
+            yield row
 
     async def stream_orderbook(self, grid_id: str, hz: int = 10) -> AsyncGenerator[Dict[str, Any], None]:
         tick = 0
@@ -128,7 +166,7 @@ class EngineFacade:
 
             # Record tick in DB
             soc_pct = (state.battery.soc / params.q_max_units) * 100.0 if params.q_max_units > 0 else 50.0
-            insert_tick(grid_id, now_ms, float(mid) / 1_000_000.0, soc_pct, params.sigma, c_deg)
+            await storage.insert_tick(now_ms, grid_id, int(mid), soc_pct, params.sigma, c_deg)
             
             # Compute top-12 levels & Order Book Imbalance (OBI)
             bids_raw = state.lob.get_bids_depth(depth=12)
