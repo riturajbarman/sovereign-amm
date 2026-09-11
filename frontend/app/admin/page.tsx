@@ -32,7 +32,7 @@ export default function AdminPage() {
     fetchUsers();
   }, []);
 
-  const handleApprove = async (userId: str) => {
+  const handleApprove = async (userId: string) => {
     // Basic prompt for bus assignment (for demo)
     const busIdStr = prompt("Assign to Grid Bus ID (e.g. 1, 2):", "1");
     if (!busIdStr) return;
@@ -46,7 +46,7 @@ export default function AdminPage() {
     fetchUsers();
   };
 
-  const handleReject = async (userId: str) => {
+  const handleReject = async (userId: string) => {
     if (!confirm("Reject this user?")) return;
     await fetch(`http://127.0.0.1:8000/api/admin/users/${userId}/reject`, {
       method: "POST",
@@ -54,7 +54,7 @@ export default function AdminPage() {
     fetchUsers();
   };
 
-  const handleRoleChange = async (userId: str, newRole: str) => {
+  const handleRoleChange = async (userId: string, newRole: string) => {
     await fetch(`http://127.0.0.1:8000/api/admin/users/${userId}/role`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

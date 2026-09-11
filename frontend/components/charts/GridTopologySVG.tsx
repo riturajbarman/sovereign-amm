@@ -1,0 +1,233 @@
+'use client';
+
+import { useState } from 'react';
+import { useStore } from '@/lib/store';
+
+/**
+ * Fixed SVG coordinates for each bus node, matching the GRID_DATA bus
+ * positions in lib/mock/grid.ts (600×400 viewBox).
+ */
+const NODE_POS: Record<string, { x: number; y: number }> = {
+  'BUS-01': { x: 300, y: 50 },
+  'BUS-02': { x: 100, y: 150 },
+  'BUS-03': { x: 500, y: 150 },
+  'BUS-04': { x: 80, y: 310 },
+  'BUS-05': { x: 300, y: 360 },
+  'BUS-06': { x: 520, y: 310 },
+  'BUS-07': { x: 300, y: 210 },
+};
+
+/** Node fill colour keyed by bus asset type. */
+const TYPE_COLOR: Record<string, string> = {
+  solar: '#f59e0b',
+  load: '#38bdf8',
+  storage: '#10b981',
+  slack: '#94a3b8',
+};
+
+/** Edge stroke colour keyed by congestion status. */
+const STATUS_COLOR: Record<string, string> = {
+  normal: '#334155',
+  amber: '#f59e0b',
+  critical: '#e11d48',
+};
+
+interface TooltipState {
+  busId: string;
+  x: number;
+  y: number;
+}
+
+interface GridTopologySVGProps {
+  /** When true, hovering a node shows an LMP/injection tooltip. */
+  interactive?: boolean;
+}
+
+/**
+ * Hand-built SVG rendering the 7-bus campus microgrid topology.
+ *
+ * - 9 edges rendered as animated dashed lines; dash-offset animation
+ *   direction follows power-flow sign (positive = from→to, negative = to→from).
+ * - Animation speed scales with |flowMW| so heavily loaded lines animate faster.
+ * - Critical lines pulse using Tailwind's `animate-pulse`.
+ * - When `interactive` is true, hovering a node reveals an inline SVG tooltip
+ *   displaying LMP, injection (MW), and bus label.
+ */
+export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
+  const buses = useStore((s) => s.buses);
+  const lines = useStore((s) => s.lines);
+  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+
+  return (
+    <div className="relative w-full">
+      <svg
+        viewBox="0 0 600 400"
+        className="w-full h-auto"
+        role="img"
+        aria-label="Microgrid topology"
+      >
+        {/* ── Edges ─────────────────────────────────────────────────────── */}
+        {lines.map((line) => {
+          const from = NODE_POS[line.from];
+          const to = NODE_POS[line.to];
+          if (!from || !to) return null;
+
+          const color = STATUS_COLOR[line.status] ?? '#334155';
+          // Faster animation for higher flow magnitude, clamped to [0.6s, 2s]
+          const dur = `${Math.max(0.6, 2 - Math.abs(line.flowMW) * 0.1)}s`;
+
+          return (
+            <g key={line.id}>
+              {/* Static background stroke for contrast */}
+              <line
+                x1={from.x}
+                y1={from.y}
+                x2={to.x}
+                y2={to.y}
+                stroke={color}
+                strokeWidth={2}
+                strokeOpacity={0.25}
+              />
+              {/* Animated dashed flow line */}
+              <line
+                x1={from.x}
+                y1={from.y}
+                x2={to.x}
+                y2={to.y}
+                stroke={color}
+                strokeWidth={line.status === 'critical' ? 3 : 2}
+                strokeDasharray="6 4"
+                className={line.status === 'critical' ? 'animate-pulse' : ''}
+              >
+                <animate
+                  attributeName="strokeDashoffset"
+                  from={line.flowMW >= 0 ? '0' : '20'}
+                  to={line.flowMW >= 0 ? '20' : '0'}
+                  dur={dur}
+                  repeatCount="indefinite"
+                />
+              </line>
+              {/* Utilization label at midpoint */}
+              <text
+                x={(from.x + to.x) / 2}
+                y={(from.y + to.y) / 2 - 5}
+                textAnchor="middle"
+                fontFamily="monospace"
+                fontSize="8"
+                fill={color}
+                opacity={0.8}
+              >
+                {line.utilizationPct}%
+              </text>
+            </g>
+          );
+        })}
+
+        {/* ── Nodes ─────────────────────────────────────────────────────── */}
+        {buses.map((bus) => {
+          const pos = NODE_POS[bus.id];
+          if (!pos) return null;
+
+          const color = TYPE_COLOR[bus.type] ?? '#94a3b8';
+          // Node radius scales slightly with |injection| to encode magnitude
+          const r = 8 + Math.min(6, Math.abs(bus.injectionMW) * 0.4);
+
+          return (
+            <g
+              key={bus.id}
+              style={{ cursor: interactive ? 'pointer' : 'default' }}
+              onMouseEnter={
+                interactive
+                  ? () => setTooltip({ busId: bus.id, x: pos.x, y: pos.y })
+                  : undefined
+              }
+              onMouseLeave={interactive ? () => setTooltip(null) : undefined}
+            >
+              {/* Halo */}
+              <circle cx={pos.x} cy={pos.y} r={r + 5} fill={color} opacity={0.1} />
+              {/* Main node */}
+              <circle cx={pos.x} cy={pos.y} r={r} fill={color} opacity={0.9} />
+              {/* Bus ID label */}
+              <text
+                x={pos.x}
+                y={pos.y + r + 11}
+                textAnchor="middle"
+                fontFamily="monospace"
+                fontSize="9"
+                fill="#94a3b8"
+              >
+                {bus.id}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* ── Interactive tooltip ────────────────────────────────────────── */}
+        {interactive &&
+          tooltip &&
+          (() => {
+            const bus = buses.find((b) => b.id === tooltip.busId);
+            if (!bus) return null;
+
+            // Clamp tooltip so it never exits the 600×400 viewBox
+            const tx = Math.min(tooltip.x + 12, 470);
+            const ty = Math.max(tooltip.y - 65, 5);
+
+            return (
+              <g>
+                <rect
+                  x={tx}
+                  y={ty}
+                  width={125}
+                  height={58}
+                  rx={4}
+                  fill="#0f172a"
+                  stroke="#334155"
+                  strokeWidth={1}
+                />
+                <text
+                  x={tx + 6}
+                  y={ty + 14}
+                  fontFamily="monospace"
+                  fontSize="9"
+                  fill="#94a3b8"
+                >
+                  {bus.id} · {bus.type.toUpperCase()}
+                </text>
+                <text
+                  x={tx + 6}
+                  y={ty + 27}
+                  fontFamily="monospace"
+                  fontSize="9"
+                  fill="#f8fafc"
+                >
+                  LMP: ₹{bus.lmp.toFixed(3)}
+                </text>
+                <text
+                  x={tx + 6}
+                  y={ty + 40}
+                  fontFamily="monospace"
+                  fontSize="9"
+                  fill={bus.injectionMW >= 0 ? '#10b981' : '#e11d48'}
+                >
+                  {bus.injectionMW >= 0 ? '+' : ''}
+                  {bus.injectionMW.toFixed(2)} MW
+                </text>
+                <text
+                  x={tx + 6}
+                  y={ty + 53}
+                  fontFamily="monospace"
+                  fontSize="9"
+                  fill="#64748b"
+                >
+                  {bus.label}
+                </text>
+              </g>
+            );
+          })()}
+      </svg>
+    </div>
+  );
+}
+
+export default GridTopologySVG;

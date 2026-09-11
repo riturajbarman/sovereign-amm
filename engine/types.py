@@ -98,5 +98,23 @@ class EmergencyOverrideReleased:
     sequence_number: int
     operator_id: str
     timestamp: int
+
+@dataclass(frozen=True, slots=True)
+class ManualInjectionEvent:
+    sequence_number: int
+    bus_id: str
+    mw: float
+    ts: int
+    actor: str
+
+@dataclass(frozen=True, slots=True)
+class GridResetEvent:
+    sequence_number: int
+    ts: int
+    actor: str
     
-Event = Union[OrderPlaced, OrderCancelled, TradeExecuted, QuoteUpdated, SoCChanged, TradeRejected, EmergencyOverrideEngaged, EmergencyOverrideReleased]
+Event = Union[
+    OrderPlaced, OrderCancelled, TradeExecuted, QuoteUpdated, 
+    SoCChanged, TradeRejected, EmergencyOverrideEngaged, 
+    EmergencyOverrideReleased, ManualInjectionEvent, GridResetEvent
+]

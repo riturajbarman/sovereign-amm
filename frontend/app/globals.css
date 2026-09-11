@@ -3,17 +3,90 @@
 @tailwind utilities;
 
 @layer base {
-  /* Body styles moved to layout.tsx */
+  /* Primary dark background: bg-slate-950 (#020617) */
+  html {
+    background-color: theme("colors.slate.950");
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-slate-950 text-slate-100 antialiased min-h-screen;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Ensure tabular numerics across all monospace number displays */
+  .font-mono,
+  [class*="font-mono"] {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  /* Focus ring: emerald-500 (#10b981), contrast ≥ 3:1 against slate-950.
+     Native outline is set for browsers that don't honour box-shadow as a
+     focus indicator (e.g. Safari < 16). Tailwind ring is kept as an
+     additional visual layer for browsers that support it. */
+  :focus-visible {
+    outline: 2px solid #10b981;
+    outline-offset: 2px;
+    @apply ring-2 ring-emerald-500 ring-offset-2 ring-offset-slate-950;
+  }
+
+  /* Scrollbar styling for dark theme */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-slate-900;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-600 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-500;
+  }
+
+  /* Range/slider thumb styles for JudgeControls */
+  input[type="range"] {
+    @apply accent-emerald-500;
+  }
 }
 
 @layer components {
+  /* Standard card component matching spec's card styling */
+  .card {
+    @apply bg-slate-900 border border-slate-800 rounded-lg shadow-card;
+  }
+
+  /* Legacy .panel class - retained for backward compatibility */
   .panel {
-    @apply bg-panel border border-border p-4 flex flex-col rounded-2xl shadow-panel backdrop-blur-xl relative overflow-hidden;
-    /* Strict tabular lining for numbers to prevent layout shift */
+    @apply bg-slate-900 border border-slate-800 p-4 flex flex-col rounded-lg shadow-panel relative overflow-hidden;
     font-variant-numeric: tabular-nums lining-nums;
   }
-  
+
   .panel-title {
-    @apply text-xs font-bold text-textMuted uppercase tracking-widest mb-4 border-b border-border pb-2;
+    @apply text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-800 pb-2;
+  }
+
+  /* Bid/ask color utilities */
+  .bid-color {
+    @apply text-emerald-500;
+  }
+
+  .ask-color {
+    @apply text-rose-600;
+  }
+
+  /* Monospace number display - ensures decimal alignment */
+  .mono-num {
+    @apply font-mono tabular-nums;
+  }
+
+  /* Skip-to-content link (accessibility) */
+  .skip-to-content {
+    @apply absolute -top-full left-4 z-50 px-4 py-2 bg-emerald-600 text-white font-semibold rounded-b-lg;
+    @apply focus:top-0 transition-[top] duration-150;
   }
 }
