@@ -5,7 +5,7 @@ const socialLinks = [
   {
     name: "GitHub",
     icon: Github,
-    href: "https://github.com/sovereign-amm",
+    href: "https://github.com/riturajbarman",
   },
   {
     name: "Twitter",
@@ -32,15 +32,15 @@ export function Footer() {
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
                 <a
-                  href="mailto:info@sovereign-amm.com"
+                  href="mailto:@sovereign-amm.com"
                   className="hover:text-white transition-colors"
                 >
-                  info@sovereign-amm.com
+                  @sovereign-amm.com
                 </a>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
-                <span>+91 33 2414 6666</span>
+                <span>+91 99074 18830</span>
               </div>
             </div>
           </div>

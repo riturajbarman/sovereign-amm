@@ -162,10 +162,10 @@ export default function ContactPage() {
                   <div>
                     <p className="text-sm font-semibold text-slate-300">Email</p>
                     <a
-                      href="mailto:info@sovereign-amm.com"
+                      href="mailto:@sovereign-amm.com"
                       className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors font-mono"
                     >
-                      info@sovereign-amm.com
+                      @sovereign-amm.com
                     </a>
                   </div>
                 </div>
@@ -178,10 +178,10 @@ export default function ContactPage() {
                   <div>
                     <p className="text-sm font-semibold text-slate-300">Phone</p>
                     <a
-                      href="tel:+913324146666"
+                      href="tel:+919907418830"
                       className="text-sm text-slate-400 hover:text-white transition-colors font-mono"
                     >
-                      +91 33 2414 6666
+                      +91 99074 18830
                     </a>
                   </div>
                 </div>
@@ -193,7 +193,7 @@ export default function ContactPage() {
               <h2 className="text-base font-semibold text-white mb-4">Connect</h2>
               <div className="flex gap-3">
                 <a
-                  href="https://github.com/sovereign-amm"
+                  href="https://github.com/riturajbarman"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="GitHub"
