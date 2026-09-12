@@ -8,6 +8,7 @@ import { Menu, X } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { AuthButtons } from './AuthButtons';
 import { MobileMenu } from './MobileMenu';
+import { ThemeToggle } from '../ui/ThemeToggle';
 
 /** All top-level navigation destinations. */
 const navigationTabs = [
@@ -39,7 +40,7 @@ export function Navbar() {
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
-    <header className="sticky top-0 z-50 bg-slate-900 border-b border-slate-800">
+    <header className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-sky-200 dark:border-slate-800">
       <nav
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between"
         aria-label="Main navigation"
@@ -48,7 +49,7 @@ export function Navbar() {
         <div className="flex items-center gap-8">
           <Link
             href="/"
-            className="text-lg font-bold tracking-widest text-white uppercase font-display"
+            className="text-lg font-bold tracking-widest text-slate-900 dark:text-white uppercase font-display"
             aria-label="Sovereign-AMM home"
           >
             SOVEREIGN-AMM
@@ -67,8 +68,8 @@ export function Navbar() {
                   href={tab.href}
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-slate-800 text-white'
-                      : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                      ? 'bg-sky-100 dark:bg-slate-800 text-sky-900 dark:text-white'
+                      : 'text-slate-600 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-slate-700 hover:text-sky-900 dark:hover:text-white'
                   }`}
                   aria-current={isActive ? 'page' : undefined}
                 >
@@ -81,16 +82,21 @@ export function Navbar() {
 
         {/* ── Right: Auth area + hamburger ────────────────────────────────── */}
         <div className="flex items-center gap-3">
+          {/* Desktop theme toggle */}
+          <div className="hidden md:block">
+            <ThemeToggle />
+          </div>
+
           {/* Auth / user section — always shown */}
           {demoUser ? (
-            <span className="text-sm text-emerald-400 font-mono">DEMO MODE</span>
+            <span className="text-sm text-emerald-600 dark:text-emerald-400 font-mono">DEMO MODE</span>
           ) : (
             <AuthButtons />
           )}
 
           {/* Hamburger — visible only on mobile */}
           <button
-            className="md:hidden p-2 rounded-md text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+            className="md:hidden p-2 rounded-md text-slate-600 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-slate-700 hover:text-sky-900 dark:hover:text-white transition-colors"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
             aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={mobileMenuOpen}

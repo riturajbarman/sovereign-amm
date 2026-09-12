@@ -6,6 +6,7 @@ import { Footer } from "@/components/footer/Footer";
 import { MarketClockProvider } from "@/components/providers/MarketClockProvider";
 import { AuthDrawer } from "@/components/layout/AuthDrawer";
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
@@ -29,24 +30,27 @@ export default function RootLayout({
     <html
       lang="en"
       className={`dark ${inter.variable} ${outfit.variable} ${jetbrains.variable}`}
+      suppressHydrationWarning
     >
-      <body className="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col">
+      <body className="bg-sky-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col">
         {/* Accessibility: skip-to-main-content link, visible on keyboard focus */}
         <a href="#main-content" className="skip-to-content">
           Skip to main content
         </a>
 
         <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
-          <MarketClockProvider>
-            <Navbar />
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+            <MarketClockProvider>
+              <Navbar />
 
-            <main id="main-content" className="flex-1">
-              {children}
-            </main>
+              <main id="main-content" className="flex-1">
+                {children}
+              </main>
 
-            <Footer />
-            <AuthDrawer />
-          </MarketClockProvider>
+              <Footer />
+              <AuthDrawer />
+            </MarketClockProvider>
+          </ThemeProvider>
         </GoogleOAuthProvider>
       </body>
     </html>

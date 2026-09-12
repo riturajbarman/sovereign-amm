@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
+import { useTheme } from 'next-themes';
 
 /**
  * Fixed SVG coordinates for each bus node, matching the GRID_DATA bus
@@ -23,13 +24,6 @@ const TYPE_COLOR: Record<string, string> = {
   load: '#38bdf8',
   storage: '#10b981',
   slack: '#94a3b8',
-};
-
-/** Edge stroke colour keyed by congestion status. */
-const STATUS_COLOR: Record<string, string> = {
-  normal: '#334155',
-  amber: '#f59e0b',
-  critical: '#e11d48',
 };
 
 interface TooltipState {
@@ -57,6 +51,31 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
   const buses = useStore((s) => s.buses);
   const lines = useStore((s) => s.lines);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isLight = mounted && theme === 'light';
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'amber':
+        return '#f59e0b';
+      case 'critical':
+        return '#e11d48';
+      case 'normal':
+      default:
+        return isLight ? '#0284c7' : '#334155'; // sky-600 vs slate-700
+    }
+  };
+
+  const tooltipBg = isLight ? '#ffffff' : '#0f172a';
+  const tooltipBorder = isLight ? '#bae6fd' : '#334155';
+  const tooltipTextPrimary = isLight ? '#0f172a' : '#f8fafc';
+  const tooltipTextSecondary = isLight ? '#64748b' : '#94a3b8';
 
   return (
     <div className="relative w-full">
@@ -72,7 +91,7 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
           const to = NODE_POS[line.to];
           if (!from || !to) return null;
 
-          const color = STATUS_COLOR[line.status] ?? '#334155';
+          const color = getStatusColor(line.status);
           // Faster animation for higher flow magnitude, clamped to [0.6s, 2s]
           const dur = `${Math.max(0.6, 2 - Math.abs(line.flowMW) * 0.1)}s`;
 
@@ -115,7 +134,7 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
                 fontFamily="monospace"
                 fontSize="8"
                 fill={color}
-                opacity={0.8}
+                opacity={isLight ? 1 : 0.8}
               >
                 {line.utilizationPct}%
               </text>
@@ -154,7 +173,7 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
                 textAnchor="middle"
                 fontFamily="monospace"
                 fontSize="9"
-                fill="#94a3b8"
+                fill={tooltipTextSecondary}
               >
                 {bus.id}
               </text>
@@ -181,8 +200,8 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
                   width={125}
                   height={58}
                   rx={4}
-                  fill="#0f172a"
-                  stroke="#334155"
+                  fill={tooltipBg}
+                  stroke={tooltipBorder}
                   strokeWidth={1}
                 />
                 <text
@@ -190,7 +209,7 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
                   y={ty + 14}
                   fontFamily="monospace"
                   fontSize="9"
-                  fill="#94a3b8"
+                  fill={tooltipTextSecondary}
                 >
                   {bus.id} · {bus.type.toUpperCase()}
                 </text>
@@ -199,7 +218,7 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
                   y={ty + 27}
                   fontFamily="monospace"
                   fontSize="9"
-                  fill="#f8fafc"
+                  fill={tooltipTextPrimary}
                 >
                   LMP: ₹{bus.lmp.toFixed(3)}
                 </text>
@@ -218,7 +237,7 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
                   y={ty + 53}
                   fontFamily="monospace"
                   fontSize="9"
-                  fill="#64748b"
+                  fill={tooltipTextSecondary}
                 >
                   {bus.label}
                 </text>
